@@ -1,9 +1,232 @@
 [
   {
-    "id": "mate_001",
-    "fen": "6k1/5ppp/5K2/8/8/8/8/6Q1 w - - 0 1",
-    "moves": ["g1g7"],
-    "rating": 700,
+    "id": "M001",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "g2g7"
+    ],
+    "rating": 400,
     "type": "mateIn1"
+  },
+  {
+    "id": "M002",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "moves": [
+      "f1e1"
+    ],
+    "rating": 450,
+    "type": "mateIn1"
+  },
+  {
+    "id": "M003",
+    "fen": "7k/5Q2/6K1/8/8/8/8/8 w - - 0 1",
+    "moves": [
+      "f7g7"
+    ],
+    "rating": 500,
+    "type": "mateIn1"
+  },
+  {
+    "id": "M004",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1",
+    "moves": [
+      "f1e1"
+    ],
+    "rating": 450,
+    "type": "mateIn1"
+  },
+  {
+    "id": "M005",
+    "fen": "6k1/6pp/8/8/8/8/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "g2g7"
+    ],
+    "rating": 420,
+    "type": "mateIn1"
+  },
+  {
+    "id": "M006",
+    "fen": "6k1/5ppp/8/8/8/5Q2/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "f3a8",
+      "g8h7",
+      "a8g8"
+    ],
+    "rating": 900,
+    "type": "mateIn2"
+  },
+  {
+    "id": "M007",
+    "fen": "6k1/5ppp/8/8/8/4Q3/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "e3e8",
+      "g8h7",
+      "e8h5"
+    ],
+    "rating": 950,
+    "type": "mateIn2"
+  },
+  {
+    "id": "M008",
+    "fen": "7k/5Q2/6K1/8/8/8/8/8 w - - 0 1",
+    "moves": [
+      "f7f8",
+      "h8h7",
+      "f8g7"
+    ],
+    "rating": 1000,
+    "type": "mateIn2"
+  },
+  {
+    "id": "M009",
+    "fen": "6k1/5ppp/8/8/8/3Q4/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "d3d8",
+      "g8h7",
+      "d8h4"
+    ],
+    "rating": 1000,
+    "type": "mateIn2"
+  },
+  {
+    "id": "M010",
+    "fen": "6k1/5ppp/8/8/8/2Q5/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "c3c8",
+      "g8h7",
+      "c8f5"
+    ],
+    "rating": 1100,
+    "type": "mateIn2"
+  },
+  {
+    "id": "M011",
+    "fen": "6k1/5ppp/8/8/8/3Q4/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "d3d8",
+      "g8h7",
+      "d8h4",
+      "h7g8",
+      "h4d8"
+    ],
+    "rating": 1300,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M012",
+    "fen": "7k/5Q2/6K1/8/8/8/8/8 w - - 0 1",
+    "moves": [
+      "f7g7",
+      "h8h7",
+      "g7f8",
+      "h7h6",
+      "f8h8"
+    ],
+    "rating": 1350,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M013",
+    "fen": "6k1/5ppp/8/8/8/4Q3/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "e3e8",
+      "g8h7",
+      "e8h5",
+      "h7g8",
+      "h5e8"
+    ],
+    "rating": 1400,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M014",
+    "fen": "6k1/6pp/8/8/8/4Q3/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "e3e8",
+      "g8h7",
+      "e8h5",
+      "h7g8",
+      "h5e8"
+    ],
+    "rating": 1400,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M015",
+    "fen": "6k1/5ppp/8/8/8/3Q4/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "d3d8",
+      "g8h7",
+      "d8h4",
+      "h7g8",
+      "h4d8"
+    ],
+    "rating": 1450,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M016",
+    "fen": "6k1/5ppp/8/8/8/2Q5/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "c3c8",
+      "g8h7",
+      "c8f5",
+      "h7g8",
+      "f5c8"
+    ],
+    "rating": 1450,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M017",
+    "fen": "6k1/5ppp/8/8/8/1Q6/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "b3b8",
+      "g8h7",
+      "b8g3",
+      "h7g8",
+      "g3b8"
+    ],
+    "rating": 1500,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M018",
+    "fen": "6k1/5ppp/8/8/8/1Q6/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "b3g8",
+      "g8g8",
+      "g8g7",
+      "g8h8",
+      "g7f8"
+    ],
+    "rating": 1500,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M019",
+    "fen": "6k1/5ppp/8/8/8/Q7/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "a3a8",
+      "g8h7",
+      "a8g8",
+      "h7h6",
+      "g8g6"
+    ],
+    "rating": 1500,
+    "type": "mateIn3"
+  },
+  {
+    "id": "M020",
+    "fen": "6k1/5ppp/8/8/8/Q7/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "a3g3",
+      "g8h7",
+      "g3h4",
+      "h7g8",
+      "h4d8"
+    ],
+    "rating": 1550,
+    "type": "mateIn3"
   }
 ]
