@@ -1,0 +1,9 @@
+[
+  {
+    "id": "mate_001",
+    "fen": "6k1/5ppp/5K2/8/8/8/8/6Q1 w - - 0 1",
+    "moves": ["g1g7"],
+    "rating": 700,
+    "type": "mateIn1"
+  }
+]

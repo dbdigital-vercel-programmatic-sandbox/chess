@@ -1,0 +1,9 @@
+[
+  {
+    "id": "puzzle_001",
+    "fen": "6k1/4qppp/8/3N4/8/8/5PPP/6K1 w - - 0 1",
+    "moves": ["d5e7"],
+    "rating": 1200,
+    "themes": ["fork", "winning_material"]
+  }
+]

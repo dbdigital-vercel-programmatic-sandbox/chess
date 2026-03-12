@@ -11,7 +11,6 @@ import {
   Flame,
   Lightbulb,
   Moon,
-  Puzzle,
   RefreshCcw,
   Settings,
   Sparkles,
@@ -38,6 +37,7 @@ import {
 } from "@/lib/chess-store"
 import { playSound } from "@/lib/chess-sfx"
 import {
+  EMPTY_PUZZLE,
   PUZZLES,
   getDailyPuzzle,
   type Puzzle as PuzzleItem,
@@ -81,7 +81,7 @@ const PIECE_SYMBOLS: Record<string, string> = {
 }
 
 const HOME_MODES: Array<{
-  id: "standard" | "rush" | "daily" | "mate" | "settings"
+  id: "standard" | "rush" | "daily" | "settings"
   title: string
   description: string
   icon: LucideIcon
@@ -112,14 +112,14 @@ const HOME_MODES: Array<{
     ribbon: "Daily",
     gradient: "from-cyan-400/20 via-sky-400/10 to-transparent",
   },
-  {
-    id: "mate",
-    title: "Find the Forced Checkmate",
-    description: "Find the forced checkmate sequence.",
-    icon: Puzzle,
-    ribbon: "Mate Lab",
-    gradient: "from-rose-400/20 via-orange-300/15 to-transparent",
-  },
+  // {
+  //   id: "mate",
+  //   title: "Find the Forced Checkmate",
+  //   description: "Find the forced checkmate sequence.",
+  //   icon: Puzzle,
+  //   ribbon: "Mate Lab",
+  //   gradient: "from-rose-400/20 via-orange-300/15 to-transparent",
+  // },
   {
     id: "settings",
     title: "Settings",
@@ -375,7 +375,9 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     useState<DifficultyId>("intermediate")
   const [trainingRating, setTrainingRating] = useState(1000)
 
-  const [currentPuzzle, setCurrentPuzzle] = useState<PuzzleItem>(PUZZLES[0])
+  const [currentPuzzle, setCurrentPuzzle] = useState<PuzzleItem>(
+    PUZZLES[0] ?? EMPTY_PUZZLE
+  )
   const [sessionPuzzles, setSessionPuzzles] = useState<PuzzleItem[]>([])
   const [sessionCursor, setSessionCursor] = useState(0)
   const [fen, setFen] = useState(currentPuzzle.fen)
@@ -413,10 +415,10 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     () => PUZZLES.filter((puzzle) => puzzle.kind === "tactic"),
     []
   )
-  const forcedMatePuzzles = useMemo(
-    () => PUZZLES.filter((puzzle) => puzzle.kind === "forced-mate"),
-    []
-  )
+  // const forcedMatePuzzles = useMemo(
+  //   () => PUZZLES.filter((puzzle) => puzzle.kind === "forced-mate"),
+  //   []
+  // )
 
   const effectiveOrientation = orientation
   const timerActive = mode === "rush" || timerMode !== "none"
@@ -500,14 +502,16 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
   const getModePool = useCallback(
     (nextMode: PlayMode) => {
       if (nextMode === "mate") {
-        return forcedMatePuzzles
+        // Forced checkmate mode is intentionally disabled for now.
+        return []
       }
       if (nextMode === "daily") {
-        return [getDailyPuzzle()]
+        const dailyPuzzle = getDailyPuzzle()
+        return dailyPuzzle ? [dailyPuzzle] : []
       }
       return tacticalPuzzles
     },
-    [forcedMatePuzzles, tacticalPuzzles]
+    [tacticalPuzzles]
   )
 
   const getRatedPool = useCallback(
@@ -530,7 +534,8 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
   const createSession = useCallback(
     (nextMode: PlayMode) => {
       if (nextMode === "daily") {
-        return [getDailyPuzzle()]
+        const dailyPuzzle = getDailyPuzzle()
+        return dailyPuzzle ? [dailyPuzzle] : []
       }
 
       const pool = getRatedPool(getModePool(nextMode))
