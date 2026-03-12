@@ -1,0 +1,261 @@
+[
+  {
+    "id": "L001",
+    "fen": "r1bqkb1r/pppp1ppp/2n5/4p3/3Pn3/5N2/PPP1PPPP/RNBQKB1R w KQkq - 0 4",
+    "moves": [
+      "f3e5",
+      "c6e5",
+      "d4e5"
+    ],
+    "rating": 900,
+    "themes": [
+      "fork",
+      "center"
+    ]
+  },
+  {
+    "id": "L002",
+    "fen": "r2q1rk1/pp3ppp/2n5/3p4/3P4/2PB1N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "d3h7",
+      "g8h7",
+      "f3g5"
+    ],
+    "rating": 1400,
+    "themes": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "id": "L003",
+    "fen": "2r3k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+    "moves": [
+      "d1d8",
+      "c8d8",
+      "d1d8"
+    ],
+    "rating": 1100,
+    "themes": [
+      "backRank"
+    ]
+  },
+  {
+    "id": "L004",
+    "fen": "6k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1",
+    "moves": [
+      "g2g7"
+    ],
+    "rating": 400,
+    "themes": [
+      "mate",
+      "mateIn1"
+    ]
+  },
+  {
+    "id": "L005",
+    "fen": "r3k2r/pppq1ppp/2npbn2/3Np3/2B1P3/2N5/PPP2PPP/R1BQ1RK1 w kq - 0 1",
+    "moves": [
+      "d5f6",
+      "g7f6",
+      "c4e6"
+    ],
+    "rating": 1500,
+    "themes": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "id": "L006",
+    "fen": "rnbqk2r/pppp1ppp/5n2/4p3/4P3/3P4/PPP2PPP/RNBQKBNR w KQkq - 0 3",
+    "moves": [
+      "d1h5",
+      "f6h5",
+      "g1f3"
+    ],
+    "rating": 900,
+    "themes": [
+      "attack"
+    ]
+  },
+  {
+    "id": "L007",
+    "fen": "r2q1rk1/ppp2ppp/2n2n2/3pp3/3PP3/2PB1N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "e4d5",
+      "f6d5",
+      "c3e5"
+    ],
+    "rating": 1300,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L008",
+    "fen": "8/5pk1/6p1/8/8/6P1/5P1P/6K1 w - - 0 1",
+    "moves": [
+      "g1f1",
+      "g7f6",
+      "f1e2"
+    ],
+    "rating": 600,
+    "themes": [
+      "endgame"
+    ]
+  },
+  {
+    "id": "L009",
+    "fen": "r1bq1rk1/ppp2ppp/2n5/3np3/3PP3/2P2N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "e4d5",
+      "d8d5",
+      "d1d5"
+    ],
+    "rating": 1200,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L010",
+    "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/3P4/PPP2PPP/RNBQKBNR b KQkq - 0 2",
+    "moves": [
+      "d7d5",
+      "e4d5",
+      "d8d5"
+    ],
+    "rating": 800,
+    "themes": [
+      "center"
+    ]
+  },
+  {
+    "id": "L011",
+    "fen": "r1bq1rk1/ppp2ppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "c4f7",
+      "g8f7",
+      "f3g5"
+    ],
+    "rating": 1600,
+    "themes": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "id": "L012",
+    "fen": "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/3P1N2/PPP2PPP/RNBQKB1R w KQkq - 0 3",
+    "moves": [
+      "f3e5",
+      "f6e4",
+      "d3e4"
+    ],
+    "rating": 1000,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L013",
+    "fen": "8/6k1/6p1/5p2/5P2/6P1/6K1/8 w - - 0 1",
+    "moves": [
+      "g2f3",
+      "g7f6",
+      "f3e3"
+    ],
+    "rating": 700,
+    "themes": [
+      "endgame"
+    ]
+  },
+  {
+    "id": "L014",
+    "fen": "r2qk2r/ppp2ppp/2n2n2/3pp3/3PP3/2PB1N2/PP3PPP/R1BQ1RK1 w kq - 0 1",
+    "moves": [
+      "d4e5",
+      "c6e5",
+      "f3e5"
+    ],
+    "rating": 1300,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L015",
+    "fen": "r1bq1rk1/ppp2ppp/2n5/3np3/3PP3/2P2N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "e4d5",
+      "c6e7",
+      "d5c6"
+    ],
+    "rating": 1400,
+    "themes": [
+      "attack"
+    ]
+  },
+  {
+    "id": "L016",
+    "fen": "6k1/5ppp/8/8/8/8/6PP/6K1 w - - 0 1",
+    "moves": [
+      "g2g4"
+    ],
+    "rating": 500,
+    "themes": [
+      "endgame"
+    ]
+  },
+  {
+    "id": "L017",
+    "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/3Pn3/5N2/PPP1PPPP/RNBQKB1R w KQkq - 0 4",
+    "moves": [
+      "d4e5",
+      "c6e5",
+      "f3e5"
+    ],
+    "rating": 900,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L018",
+    "fen": "r1bq1rk1/ppp2ppp/2n2n2/3pp3/3PP3/2PB1N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "d4e5",
+      "c6e5",
+      "f3e5"
+    ],
+    "rating": 1200,
+    "themes": [
+      "fork"
+    ]
+  },
+  {
+    "id": "L019",
+    "fen": "r2q1rk1/ppp2ppp/2n2n2/3pp3/3PP3/2PB1N2/PP3PPP/R1BQ1RK1 w - - 0 1",
+    "moves": [
+      "d4e5",
+      "f6e4",
+      "d3e4"
+    ],
+    "rating": 1100,
+    "themes": [
+      "attack"
+    ]
+  },
+  {
+    "id": "L020",
+    "fen": "6k1/5ppp/8/8/8/8/6PP/6K1 w - - 0 1",
+    "moves": [
+      "g2g3"
+    ],
+    "rating": 600,
+    "themes": [
+      "endgame"
+    ]
+  }
+]
