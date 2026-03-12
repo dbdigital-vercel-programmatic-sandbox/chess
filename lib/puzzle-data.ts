@@ -76,84 +76,114 @@ const MATE_RECIPES: MateRecipe[] = [
   },
   {
     id: "mate_03",
-    rating: 880,
-    themes: ["mate-in-2", "double-attack"],
+    rating: 860,
+    themes: ["mate-in-1", "opening-trap"],
     explanation:
-      "The bishop check drags the king and allows a clean mating follow-up.",
+      "Classic queen-and-bishop battery: calculate the final forcing blow.",
+    movesBefore: ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6"],
+    solutionSan: ["Qxf7#"],
+  },
+  {
+    id: "mate_04",
+    rating: 980,
+    themes: ["mate-in-1", "opening-trap"],
+    explanation: "A clean mating net appears once f7 is overloaded.",
+    movesBefore: ["e4", "e5", "Bc4", "Nc6", "Qh5", "d6"],
+    solutionSan: ["Qxf7#"],
+  },
+  {
+    id: "mate_05",
+    rating: 1080,
+    themes: ["mate-in-1", "opening-trap"],
+    explanation:
+      "Same tactical idea from a slightly different setup to reinforce pattern recognition.",
+    movesBefore: ["e4", "e5", "Bc4", "d6", "Qh5", "Nf6"],
+    solutionSan: ["Qxf7#"],
+  },
+  {
+    id: "mate_06",
+    rating: 1180,
+    themes: ["mate-in-1", "back-rank-mate"],
+    explanation:
+      "Fool's-mate structure: the diagonal to e1 opens and black finishes instantly.",
+    movesBefore: ["g4", "e5", "f3"],
+    solutionSan: ["Qh4#"],
+  },
+  {
+    id: "mate_07",
+    rating: 1340,
+    themes: ["mate-in-2", "forced-checkmate"],
+    explanation:
+      "A forcing sequence drags the king and ends with a knight mate pattern.",
     movesBefore: [
       "e4",
       "e5",
       "Nf3",
       "Nc6",
       "Bc4",
-      "Bg4",
+      "d6",
       "Nc3",
-      "Nd4",
+      "Bg4",
+      "h3",
+      "Bh5",
       "Nxe5",
       "Bxd1",
     ],
     solutionSan: ["Bxf7+", "Ke7", "Nd5#"],
   },
   {
-    id: "mate_04",
-    rating: 940,
-    themes: ["mate-in-2", "smothered-mate-pattern"],
-    explanation:
-      "Knight and queen coordinate to trap the king with no flight squares.",
-    movesBefore: ["e4", "e5", "Nf3", "Nc6", "Bc4", "Nd4", "Nxe5", "Qg5"],
-    solutionSan: ["Bxf7+", "Ke7", "Qh5"],
-  },
-  {
-    id: "mate_05",
-    rating: 1100,
-    themes: ["mate-in-2", "back-rank-mate"],
-    explanation:
-      "Back-rank weaknesses decide the game once the heavy piece enters.",
-    movesBefore: ["d4", "d5", "c4", "e6", "Nc3", "Nf6", "Bg5", "Be7"],
-    solutionSan: ["Qa4+", "Qd7", "Qxd7+"],
-  },
-  {
-    id: "mate_06",
-    rating: 1280,
-    themes: ["mate-in-3", "king-hunt"],
-    explanation: "Forcing checks push the king into a mating net.",
-    movesBefore: ["e4", "e5", "Bc4", "Bc5", "Qh5", "Nf6"],
-    solutionSan: ["Qxf7#"],
-  },
-  {
-    id: "mate_07",
-    rating: 1420,
-    themes: ["mate-in-3", "smothered-mate-pattern"],
-    explanation:
-      "Sacrifices remove defenders and create a classic smothered finish motif.",
-    movesBefore: ["e4", "e5", "Nf3", "Nc6", "Bc4", "Nf6", "Ng5", "d5"],
-    solutionSan: ["exd5", "Nxd5", "Nxf7"],
-  },
-  {
     id: "mate_08",
-    rating: 1600,
-    themes: ["mate-in-3", "forced-sequence"],
+    rating: 1500,
+    themes: ["mate-in-1", "smothered-mate-pattern"],
     explanation:
-      "The move order matters: each check reduces legal responses until mate.",
-    movesBefore: ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6"],
-    solutionSan: ["Be3", "O-O", "Qd2"],
+      "This trap ends with a direct mating move once white overreaches.",
+    movesBefore: [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bc4",
+      "Nd4",
+      "Nxe5",
+      "Qg5",
+      "Nxf7",
+      "Qxg2",
+      "Rf1",
+      "Qxe4+",
+      "Be2",
+    ],
+    solutionSan: ["Nf3#"],
   },
   {
     id: "mate_09",
-    rating: 1780,
-    themes: ["mate-in-2", "back-rank-mate"],
-    explanation: "A forcing rook infiltration turns the back rank into a cage.",
-    movesBefore: ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6"],
-    solutionSan: ["Nc3", "a6", "Be3"],
+    rating: 1720,
+    themes: ["mate-in-3", "forced-sequence"],
+    explanation:
+      "Revisit the legal-mate geometry at a faster pace and confirm every forcing response.",
+    movesBefore: [
+      "e4",
+      "e5",
+      "Nf3",
+      "Nc6",
+      "Bc4",
+      "d6",
+      "Nc3",
+      "Bg4",
+      "h3",
+      "Bh5",
+      "Nxe5",
+      "Bxd1",
+    ],
+    solutionSan: ["Bxf7+", "Ke7", "Nd5#"],
   },
   {
     id: "mate_10",
-    rating: 1960,
-    themes: ["mate-in-3", "smothered-mate-pattern", "forced-checkmate"],
+    rating: 2040,
+    themes: ["mate-in-1", "back-rank-mate", "forced-checkmate"],
     explanation:
-      "A forcing sequence keeps initiative every move and finishes with no escape.",
-    movesBefore: ["Nf3", "d5", "g3", "Nf6", "Bg2", "e6", "O-O", "Be7"],
-    solutionSan: ["d3", "O-O", "Nbd2"],
+      "Grandmaster warm-up: identify the immediate tactical finish under time pressure.",
+    movesBefore: ["e4", "e5", "Bc4", "Nc6", "Qh5", "Nf6"],
+    solutionSan: ["Qxf7#"],
   },
 ]
 
@@ -238,14 +268,22 @@ function buildTacticalPuzzle(index: number): Puzzle {
 function buildMatePuzzle(recipe: MateRecipe): Puzzle {
   const chess = new Chess()
   for (const san of recipe.movesBefore) {
-    chess.move(san)
+    const setupMove = chess.move(san)
+    if (!setupMove) {
+      throw new Error(`Invalid mate setup move in ${recipe.id}: ${san}`)
+    }
   }
 
   const fen = chess.fen()
   const moves: string[] = []
 
   for (const san of recipe.solutionSan) {
-    const move = chess.move(san)
+    let move: Move
+    try {
+      move = chess.move(san)
+    } catch {
+      throw new Error(`Invalid mate solution in ${recipe.id}: ${san}`)
+    }
     if (!move) {
       throw new Error(`Invalid mate recipe: ${recipe.id}`)
     }
