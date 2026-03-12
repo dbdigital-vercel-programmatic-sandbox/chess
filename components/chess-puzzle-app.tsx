@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import type { LucideIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -136,6 +137,7 @@ const DIFFICULTY_LEVELS: Array<{
   min: number
   max: number
   motif: string
+  icon: LucideIcon
   pieces: string
 }> = [
   {
@@ -145,6 +147,7 @@ const DIFFICULTY_LEVELS: Array<{
     min: 400,
     max: 700,
     motif: "Simple tactics, mate in one",
+    icon: Target,
     pieces: "P",
   },
   {
@@ -154,6 +157,7 @@ const DIFFICULTY_LEVELS: Array<{
     min: 700,
     max: 1200,
     motif: "Forks, pins, simple combinations",
+    icon: Sparkles,
     pieces: "PP",
   },
   {
@@ -163,6 +167,7 @@ const DIFFICULTY_LEVELS: Array<{
     min: 1200,
     max: 1600,
     motif: "Multi-move tactical conversion",
+    icon: Flame,
     pieces: "PPP",
   },
   {
@@ -172,6 +177,7 @@ const DIFFICULTY_LEVELS: Array<{
     min: 1600,
     max: 2000,
     motif: "Deep calculation and defensive resources",
+    icon: Crown,
     pieces: "PPPP",
   },
   {
@@ -181,6 +187,7 @@ const DIFFICULTY_LEVELS: Array<{
     min: 2000,
     max: 2200,
     motif: "Precise forcing lines under pressure",
+    icon: WandSparkles,
     pieces: "PPPPP",
   },
 ]
@@ -321,10 +328,19 @@ function buildCustomPieces(style: PieceStyle): PieceRenderObject | undefined {
   )
 }
 
-export function ChessPuzzleApp() {
+const MODE_ROUTE: Record<PlayMode, string> = {
+  standard: "/tactical-puzzles",
+  rush: "/puzzle-rush",
+  daily: "/daily-puzzle",
+  mate: "/find-the-mate",
+}
+
+export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
+  const router = useRouter()
   const isMobile = useIsMobile()
   const boardRef = useRef<HTMLDivElement | null>(null)
   const [mounted, setMounted] = useState(false)
+  const initializedFromRoute = useRef(false)
 
   const {
     boardTheme,
@@ -608,35 +624,52 @@ export function ChessPuzzleApp() {
     return () => window.clearInterval(id)
   }, [finishPuzzle, screen, settingsOpen, timeLeft, timerActive])
 
-  function startMode(nextMode: PlayMode) {
-    setMode(nextMode)
-    const session = createSession(nextMode)
-    if (session.length === 0) {
-      return
-    }
-
-    setSessionPuzzles(session)
-    setSessionCursor(0)
-
-    if (nextMode === "rush") {
-      setScore(0)
-      setTimeLeft(RUSH_TIME)
-      const randomPuzzle = session[getRandomIndex(session.length)]
-      if (randomPuzzle) {
-        initializePuzzle(randomPuzzle, nextMode)
+  const startMode = useCallback(
+    (nextMode: PlayMode) => {
+      setMode(nextMode)
+      const session = createSession(nextMode)
+      if (session.length === 0) {
+        return
       }
+
+      setSessionPuzzles(session)
+      setSessionCursor(0)
+
+      if (nextMode === "rush") {
+        setScore(0)
+        setTimeLeft(RUSH_TIME)
+        const randomPuzzle = session[getRandomIndex(session.length)]
+        if (randomPuzzle) {
+          initializePuzzle(randomPuzzle, nextMode)
+        }
+        return
+      }
+
+      initializePuzzle(session[0], nextMode)
+    },
+    [createSession, initializePuzzle]
+  )
+
+  useEffect(() => {
+    if (!initialMode || initializedFromRoute.current) {
       return
     }
 
-    initializePuzzle(session[0], nextMode)
-  }
+    initializedFromRoute.current = true
+    startMode(initialMode)
+  }, [initialMode, startMode])
+
+  const goHome = useCallback(() => {
+    router.push("/")
+  }, [router])
 
   function handleHomeTileClick(modeId: (typeof HOME_MODES)[number]["id"]) {
     if (modeId === "settings") {
       setSettingsOpen(true)
       return
     }
-    startMode(modeId)
+
+    router.push(MODE_ROUTE[modeId])
   }
 
   function resetPuzzle() {
@@ -986,7 +1019,7 @@ export function ChessPuzzleApp() {
         onToggleSettings={() => setSettingsOpen((value) => !value)}
       />
 
-      <main className="relative mx-auto flex min-h-svh w-full max-w-7xl flex-col p-4 pt-20 md:p-8 md:pt-24">
+      <main className="relative mx-auto flex min-h-svh w-full max-w-[1560px] flex-col p-4 pt-20 md:p-8 md:pt-24">
         <AnimatePresence mode="wait">
           {screen === "home" && (
             <motion.section
@@ -1067,6 +1100,7 @@ export function ChessPuzzleApp() {
                       title={level.title}
                       rating={level.rating}
                       motif={level.motif}
+                      icon={level.icon}
                       pieces={level.pieces}
                       active={selectedDifficulty === level.id}
                       onClick={() => {
@@ -1140,10 +1174,16 @@ export function ChessPuzzleApp() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
-              className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px]"
+              className="grid flex-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:gap-8"
             >
-              <div className={`${shake ? "board-shake" : ""}`} ref={boardRef}>
-                <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/20 bg-black/35 px-4 py-2 text-sm text-white shadow-xl backdrop-blur">
+              <div
+                className={`mx-auto w-full max-w-[980px] ${shake ? "board-shake" : ""}`}
+                ref={boardRef}
+              >
+                <div
+                  className="mb-3 flex items-center justify-between rounded-2xl border border-white/20 bg-black/35 px-4 py-2 text-sm text-white shadow-xl backdrop-blur"
+                  style={{ width: boardSize }}
+                >
                   <div className="font-medium">
                     {mode === "rush"
                       ? "Puzzle Rush"
@@ -1171,14 +1211,10 @@ export function ChessPuzzleApp() {
                 </div>
               </div>
 
-              <aside className="rounded-3xl border border-white/20 bg-white/75 p-5 shadow-2xl backdrop-blur dark:bg-slate-900/65">
+              <aside className="h-fit self-start rounded-3xl border border-white/20 bg-white/75 p-5 shadow-2xl backdrop-blur lg:sticky lg:top-24 dark:bg-slate-900/65">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-3xl font-semibold">Puzzle Brief</h2>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setScreen("home")}
-                  >
+                  <Button variant="ghost" size="icon-sm" onClick={goHome}>
                     <X />
                   </Button>
                 </div>
@@ -1287,7 +1323,7 @@ export function ChessPuzzleApp() {
                   <Button variant="outline" onClick={resetPuzzle}>
                     Retry Puzzle
                   </Button>
-                  <Button variant="ghost" onClick={() => setScreen("home")}>
+                  <Button variant="ghost" onClick={goHome}>
                     Home
                   </Button>
                 </div>
@@ -1746,6 +1782,7 @@ function DifficultyCard({
   title,
   rating,
   motif,
+  icon: Icon,
   pieces,
   active,
   onClick,
@@ -1753,6 +1790,7 @@ function DifficultyCard({
   title: string
   rating: string
   motif: string
+  icon: LucideIcon
   pieces: string
   active: boolean
   onClick: () => void
@@ -1768,7 +1806,10 @@ function DifficultyCard({
       }`}
     >
       <p className="text-xs tracking-wide text-stone-300 uppercase">{rating}</p>
-      <p className="mt-1 text-base font-semibold text-stone-100">{title}</p>
+      <p className="mt-1 flex items-center gap-1.5 text-base font-semibold text-stone-100">
+        <Icon className="size-4" />
+        {title}
+      </p>
       <p className="mt-1 text-sm text-stone-300">{pieces}</p>
       <p className="mt-2 text-xs leading-relaxed text-stone-300/85">{motif}</p>
     </button>
@@ -1936,7 +1977,7 @@ function useBoardSize(
 
     const update = () => {
       const width = element.getBoundingClientRect().width
-      setSize(Math.max(280, Math.min(width, isMobile ? 420 : 640)))
+      setSize(Math.max(280, Math.min(width, isMobile ? 420 : 780)))
     }
 
     update()
