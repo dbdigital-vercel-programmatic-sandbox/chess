@@ -18,6 +18,7 @@ type SettingsState = {
   highContrast: boolean
   reducedMotion: boolean
   showCoordinates: boolean
+  animatedHints: boolean
   setBoardTheme: (value: BoardTheme) => void
   setPieceStyle: (value: PieceStyle) => void
   setOrientation: (value: "white" | "black") => void
@@ -27,6 +28,7 @@ type SettingsState = {
   setHighContrast: (value: boolean) => void
   setReducedMotion: (value: boolean) => void
   setShowCoordinates: (value: boolean) => void
+  setAnimatedHints: (value: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -41,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
       highContrast: false,
       reducedMotion: false,
       showCoordinates: false,
+      animatedHints: true,
       setBoardTheme: (boardTheme: BoardTheme) => set({ boardTheme }),
       setPieceStyle: (pieceStyle: PieceStyle) => set({ pieceStyle }),
       setOrientation: (orientation: "white" | "black") => set({ orientation }),
@@ -52,6 +55,7 @@ export const useSettingsStore = create<SettingsState>()(
       setReducedMotion: (reducedMotion: boolean) => set({ reducedMotion }),
       setShowCoordinates: (showCoordinates: boolean) =>
         set({ showCoordinates }),
+      setAnimatedHints: (animatedHints: boolean) => set({ animatedHints }),
     }),
     {
       name: "chess-puzzle-settings-v1",
@@ -65,6 +69,7 @@ export const useSettingsStore = create<SettingsState>()(
         highContrast: state.highContrast,
         reducedMotion: state.reducedMotion,
         showCoordinates: state.showCoordinates,
+        animatedHints: state.animatedHints,
       }),
     }
   )

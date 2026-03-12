@@ -11,6 +11,7 @@ import {
   Flame,
   Lightbulb,
   Moon,
+  Puzzle,
   RefreshCcw,
   Settings,
   Sparkles,
@@ -35,11 +36,21 @@ import {
   useSettingsStore,
 } from "@/lib/chess-store"
 import { playSound } from "@/lib/chess-sfx"
-import { PUZZLES, getDailyPuzzle, type Puzzle } from "@/lib/puzzle-data"
+import {
+  PUZZLES,
+  getDailyPuzzle,
+  type Puzzle as PuzzleItem,
+} from "@/lib/puzzle-data"
 
 type Screen = "home" | "puzzle" | "result"
-type PlayMode = "standard" | "rush" | "daily"
+type PlayMode = "standard" | "rush" | "daily" | "mate"
 type SettingsTab = "board" | "pieces" | "sounds" | "hints" | "accessibility"
+type DifficultyId =
+  | "beginner"
+  | "intermediate"
+  | "advanced"
+  | "expert"
+  | "grandmaster"
 
 const RUSH_TIME = 180
 
@@ -69,7 +80,7 @@ const PIECE_SYMBOLS: Record<string, string> = {
 }
 
 const HOME_MODES: Array<{
-  id: "standard" | "rush" | "daily" | "settings"
+  id: "standard" | "rush" | "daily" | "mate" | "settings"
   title: string
   description: string
   icon: LucideIcon
@@ -101,12 +112,76 @@ const HOME_MODES: Array<{
     gradient: "from-cyan-400/20 via-sky-400/10 to-transparent",
   },
   {
+    id: "mate",
+    title: "Find the Forced Checkmate",
+    description: "Find the forced checkmate sequence.",
+    icon: Puzzle,
+    ribbon: "Mate Lab",
+    gradient: "from-rose-400/20 via-orange-300/15 to-transparent",
+  },
+  {
     id: "settings",
     title: "Settings",
     description: "Tune board, sounds, hints, and accessibility.",
     icon: Settings,
     ribbon: "Custom",
     gradient: "from-stone-300/18 via-amber-200/12 to-transparent",
+  },
+]
+
+const DIFFICULTY_LEVELS: Array<{
+  id: DifficultyId
+  title: string
+  rating: string
+  min: number
+  max: number
+  motif: string
+  pieces: string
+}> = [
+  {
+    id: "beginner",
+    title: "Beginner",
+    rating: "400-700",
+    min: 400,
+    max: 700,
+    motif: "Simple tactics, mate in one",
+    pieces: "P",
+  },
+  {
+    id: "intermediate",
+    title: "Intermediate",
+    rating: "700-1200",
+    min: 700,
+    max: 1200,
+    motif: "Forks, pins, simple combinations",
+    pieces: "PP",
+  },
+  {
+    id: "advanced",
+    title: "Advanced",
+    rating: "1200-1600",
+    min: 1200,
+    max: 1600,
+    motif: "Multi-move tactical conversion",
+    pieces: "PPP",
+  },
+  {
+    id: "expert",
+    title: "Expert",
+    rating: "1600-2000",
+    min: 1600,
+    max: 2000,
+    motif: "Deep calculation and defensive resources",
+    pieces: "PPPP",
+  },
+  {
+    id: "grandmaster",
+    title: "Grandmaster",
+    rating: "2000+",
+    min: 2000,
+    max: 2200,
+    motif: "Precise forcing lines under pressure",
+    pieces: "PPPPP",
   },
 ]
 
@@ -142,8 +217,41 @@ function formatTime(totalSeconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 }
 
-function getRandomPuzzleIndex() {
-  return Math.floor(Math.random() * PUZZLES.length)
+function getDifficultyByRating(rating: number) {
+  return (
+    DIFFICULTY_LEVELS.find(
+      (level) => rating >= level.min && rating < level.max
+    ) ?? DIFFICULTY_LEVELS[DIFFICULTY_LEVELS.length - 1]
+  )
+}
+
+function getRandomIndex(max: number) {
+  return Math.floor(Math.random() * max)
+}
+
+function shufflePuzzles(puzzles: PuzzleItem[]) {
+  const cloned = [...puzzles]
+  for (let i = cloned.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[cloned[i], cloned[j]] = [cloned[j], cloned[i]]
+  }
+  return cloned
+}
+
+function getSquareCoordinates(
+  square: Square,
+  orientation: "white" | "black",
+  boardSize: number
+) {
+  const file = square.charCodeAt(0) - 97
+  const rank = Number(square[1])
+  const squareSize = boardSize / 8
+  const x =
+    orientation === "white" ? file * squareSize : (7 - file) * squareSize
+  const y =
+    orientation === "white" ? (8 - rank) * squareSize : (rank - 1) * squareSize
+
+  return { x, y, squareSize }
 }
 
 function getCheckSquare(chess: Chess) {
@@ -228,6 +336,7 @@ export function ChessPuzzleApp() {
     highContrast,
     reducedMotion,
     showCoordinates,
+    animatedHints,
     setBoardTheme,
     setPieceStyle,
     setOrientation,
@@ -237,6 +346,7 @@ export function ChessPuzzleApp() {
     setHighContrast,
     setReducedMotion,
     setShowCoordinates,
+    setAnimatedHints,
   } = useSettingsStore()
 
   const { resolvedTheme, setTheme } = useTheme()
@@ -245,9 +355,13 @@ export function ChessPuzzleApp() {
   const [mode, setMode] = useState<PlayMode>("standard")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("board")
+  const [selectedDifficulty, setSelectedDifficulty] =
+    useState<DifficultyId>("intermediate")
+  const [trainingRating, setTrainingRating] = useState(1000)
 
-  const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle>(PUZZLES[0])
-  const [puzzleIndex, setPuzzleIndex] = useState(0)
+  const [currentPuzzle, setCurrentPuzzle] = useState<PuzzleItem>(PUZZLES[0])
+  const [sessionPuzzles, setSessionPuzzles] = useState<PuzzleItem[]>([])
+  const [sessionCursor, setSessionCursor] = useState(0)
   const [fen, setFen] = useState(currentPuzzle.fen)
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(
     null
@@ -261,6 +375,8 @@ export function ChessPuzzleApp() {
   const [locked, setLocked] = useState(false)
   const [score, setScore] = useState(0)
   const [puzzleScore, setPuzzleScore] = useState(100)
+  const [movesPlayed, setMovesPlayed] = useState(0)
+  const [hintPreviewToken, setHintPreviewToken] = useState(0)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [liveElapsed, setLiveElapsed] = useState(0)
@@ -277,6 +393,14 @@ export function ChessPuzzleApp() {
     [pieceStyle]
   )
   const boardSize = useBoardSize(boardRef, isMobile)
+  const tacticalPuzzles = useMemo(
+    () => PUZZLES.filter((puzzle) => puzzle.kind === "tactic"),
+    []
+  )
+  const forcedMatePuzzles = useMemo(
+    () => PUZZLES.filter((puzzle) => puzzle.kind === "forced-mate"),
+    []
+  )
 
   const effectiveOrientation = orientation
   const timerActive = mode === "rush" || timerMode !== "none"
@@ -285,6 +409,10 @@ export function ChessPuzzleApp() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    setSelectedDifficulty(getDifficultyByRating(trainingRating).id)
+  }, [trainingRating])
 
   useEffect(() => {
     if (!settingsOpen) {
@@ -316,7 +444,7 @@ export function ChessPuzzleApp() {
   }, [settingsOpen])
 
   const initializePuzzle = useCallback(
-    (nextPuzzle: Puzzle, nextMode: PlayMode) => {
+    (nextPuzzle: PuzzleItem, nextMode: PlayMode) => {
       const game = new Chess(nextPuzzle.fen)
       setCurrentPuzzle(nextPuzzle)
       setFen(nextPuzzle.fen)
@@ -329,6 +457,8 @@ export function ChessPuzzleApp() {
       setShake(false)
       setLocked(false)
       setPuzzleScore(100)
+      setMovesPlayed(0)
+      setHintPreviewToken(0)
 
       puzzleStartedAt.current = Date.now()
       totalPausedMs.current = 0
@@ -351,6 +481,56 @@ export function ChessPuzzleApp() {
     [timerMode]
   )
 
+  const getModePool = useCallback(
+    (nextMode: PlayMode) => {
+      if (nextMode === "mate") {
+        return forcedMatePuzzles
+      }
+      if (nextMode === "daily") {
+        return [getDailyPuzzle()]
+      }
+      return tacticalPuzzles
+    },
+    [forcedMatePuzzles, tacticalPuzzles]
+  )
+
+  const getRatedPool = useCallback(
+    (sourcePuzzles: PuzzleItem[]) => {
+      const withinBand = sourcePuzzles.filter(
+        (puzzle) => Math.abs(puzzle.rating - trainingRating) <= 100
+      )
+      if (withinBand.length > 0) {
+        return withinBand
+      }
+      return [...sourcePuzzles].sort(
+        (a, b) =>
+          Math.abs(a.rating - trainingRating) -
+          Math.abs(b.rating - trainingRating)
+      )
+    },
+    [trainingRating]
+  )
+
+  const createSession = useCallback(
+    (nextMode: PlayMode) => {
+      if (nextMode === "daily") {
+        return [getDailyPuzzle()]
+      }
+
+      const pool = getRatedPool(getModePool(nextMode))
+      if (pool.length === 0) {
+        return []
+      }
+
+      if (nextMode === "rush") {
+        return pool
+      }
+
+      return shufflePuzzles(pool).slice(0, Math.min(20, pool.length))
+    },
+    [getModePool, getRatedPool]
+  )
+
   const finishPuzzle = useCallback(
     (success: boolean) => {
       const pausedNow = pauseStartAt.current
@@ -369,9 +549,15 @@ export function ChessPuzzleApp() {
         if (success) {
           playSound("success", soundEnabled)
           setScore((value) => value + 1)
-          const idx = getRandomPuzzleIndex()
-          setPuzzleIndex(idx)
-          window.setTimeout(() => initializePuzzle(PUZZLES[idx], "rush"), 600)
+          const rushPool = createSession("rush")
+          const nextIndex = getRandomIndex(rushPool.length)
+          const nextRushPuzzle = rushPool[nextIndex]
+          if (nextRushPuzzle) {
+            window.setTimeout(
+              () => initializePuzzle(nextRushPuzzle, "rush"),
+              600
+            )
+          }
         } else {
           setScreen("result")
         }
@@ -381,7 +567,7 @@ export function ChessPuzzleApp() {
       playSound(success ? "success" : "wrong", soundEnabled)
       setScreen("result")
     },
-    [initializePuzzle, mode, soundEnabled]
+    [createSession, initializePuzzle, mode, soundEnabled]
   )
 
   useEffect(() => {
@@ -424,23 +610,25 @@ export function ChessPuzzleApp() {
 
   function startMode(nextMode: PlayMode) {
     setMode(nextMode)
+    const session = createSession(nextMode)
+    if (session.length === 0) {
+      return
+    }
+
+    setSessionPuzzles(session)
+    setSessionCursor(0)
+
     if (nextMode === "rush") {
       setScore(0)
-      const idx = getRandomPuzzleIndex()
-      setPuzzleIndex(idx)
       setTimeLeft(RUSH_TIME)
-      initializePuzzle(PUZZLES[idx], nextMode)
+      const randomPuzzle = session[getRandomIndex(session.length)]
+      if (randomPuzzle) {
+        initializePuzzle(randomPuzzle, nextMode)
+      }
       return
     }
 
-    if (nextMode === "daily") {
-      initializePuzzle(getDailyPuzzle(), nextMode)
-      return
-    }
-
-    const idx = (puzzleIndex + 1) % PUZZLES.length
-    setPuzzleIndex(idx)
-    initializePuzzle(PUZZLES[idx], nextMode)
+    initializePuzzle(session[0], nextMode)
   }
 
   function handleHomeTileClick(modeId: (typeof HOME_MODES)[number]["id"]) {
@@ -456,14 +644,36 @@ export function ChessPuzzleApp() {
   }
 
   function nextPuzzle() {
-    const idx = (puzzleIndex + 1) % PUZZLES.length
-    setPuzzleIndex(idx)
-    setMode("standard")
-    initializePuzzle(PUZZLES[idx], "standard")
+    if (mode === "rush") {
+      startMode("rush")
+      return
+    }
+
+    if (sessionCursor + 1 < sessionPuzzles.length) {
+      const nextCursor = sessionCursor + 1
+      setSessionCursor(nextCursor)
+      initializePuzzle(sessionPuzzles[nextCursor], mode)
+      return
+    }
+
+    const refreshedSession = createSession(mode)
+    if (refreshedSession.length === 0) {
+      return
+    }
+    setSessionPuzzles(refreshedSession)
+    setSessionCursor(0)
+    initializePuzzle(refreshedSession[0], mode)
   }
 
   function applyHint() {
-    setHintLevel((value) => Math.min(value + 1, 3))
+    const maxHintLevel = animatedHints ? 4 : 3
+    setHintLevel((value) => {
+      const nextLevel = Math.min(value + 1, maxHintLevel)
+      if (nextLevel === 4) {
+        setHintPreviewToken(Date.now())
+      }
+      return nextLevel
+    })
     setPuzzleScore((value) => Math.max(0, value - 15))
     playSound("hint", soundEnabled)
   }
@@ -561,6 +771,8 @@ export function ChessPuzzleApp() {
     setCheckSquare(getCheckSquare(game))
     setSelectedSquare(null)
     setLegalTargets([])
+    setMovesPlayed((value) => value + 1)
+    setHintPreviewToken(0)
 
     const nextIndex = moveIndex + 1
     setMoveIndex(nextIndex)
@@ -664,6 +876,36 @@ export function ChessPuzzleApp() {
           },
         ]
       : []
+
+  const hintPreview = useMemo(() => {
+    if (
+      hintLevel < 4 ||
+      !animatedHints ||
+      !expectedParsed ||
+      hintPreviewToken === 0
+    ) {
+      return null
+    }
+
+    const game = new Chess(fen)
+    const piece = game.get(expectedParsed.from)
+    if (!piece) {
+      return null
+    }
+
+    const key = `${piece.color}${piece.type.toUpperCase()}`
+    const glyph = PIECE_SYMBOLS[key]
+    if (!glyph) {
+      return null
+    }
+
+    return {
+      from: expectedParsed.from,
+      to: expectedParsed.to,
+      glyph,
+      color: piece.color,
+    }
+  }, [animatedHints, expectedParsed, fen, hintLevel, hintPreviewToken])
 
   const boardOptions: ChessboardOptions = {
     id: "puzzle-board",
@@ -772,7 +1014,7 @@ export function ChessPuzzleApp() {
 
                     <div className="mt-6 flex flex-wrap gap-3 text-xs sm:text-sm">
                       <InfoChip icon={WandSparkles} label="60 local puzzles" />
-                      <InfoChip icon={Target} label="Rating 400-1800" />
+                      <InfoChip icon={Target} label="Rating 400-2200" />
                       <InfoChip icon={Flame} label="Rush ready" />
                     </div>
 
@@ -805,6 +1047,64 @@ export function ChessPuzzleApp() {
                         Live preview reflects settings instantly
                       </p>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 w-full rounded-[28px] border border-white/10 bg-black/24 p-4 backdrop-blur-lg md:p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm tracking-[0.16em] text-stone-200/80 uppercase">
+                    Difficulty level selector
+                  </p>
+                  <p className="text-xs text-stone-300">
+                    Method 1: pick a training level
+                  </p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                  {DIFFICULTY_LEVELS.map((level) => (
+                    <DifficultyCard
+                      key={level.id}
+                      title={level.title}
+                      rating={level.rating}
+                      motif={level.motif}
+                      pieces={level.pieces}
+                      active={selectedDifficulty === level.id}
+                      onClick={() => {
+                        setSelectedDifficulty(level.id)
+                        setTrainingRating(
+                          Math.floor((level.min + level.max) / 2)
+                        )
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/15 bg-black/25 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm text-stone-100">
+                      Train at Rating:{" "}
+                      <span className="font-semibold">{trainingRating}</span>
+                    </p>
+                    <p className="text-xs text-stone-300">
+                      Method 2: rating slider (±100)
+                    </p>
+                  </div>
+                  <input
+                    type="range"
+                    min={400}
+                    max={2200}
+                    step={25}
+                    value={trainingRating}
+                    onChange={(event) => {
+                      const next = Number(event.target.value)
+                      setTrainingRating(next)
+                      setSelectedDifficulty(getDifficultyByRating(next).id)
+                    }}
+                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-white/25 accent-emerald-400"
+                  />
+                  <div className="mt-1 flex justify-between text-[11px] text-stone-300">
+                    <span>400</span>
+                    <span>2200</span>
                   </div>
                 </div>
               </div>
@@ -847,7 +1147,7 @@ export function ChessPuzzleApp() {
                   <div className="font-medium">
                     {mode === "rush"
                       ? "Puzzle Rush"
-                      : `Puzzle ${puzzleIndex + 1}`}
+                      : `Puzzle ${sessionCursor + 1}/${Math.max(1, sessionPuzzles.length)}`}
                   </div>
                   <div className="font-mono text-base tracking-wide">
                     {timerActive && timeLeft !== null
@@ -855,8 +1155,19 @@ export function ChessPuzzleApp() {
                       : formatTime(liveElapsed)}
                   </div>
                 </div>
-                <div style={{ width: boardSize }}>
+                <div style={{ width: boardSize }} className="relative">
                   <Chessboard options={boardOptions} />
+                  {hintPreview && (
+                    <HintMovePreview
+                      from={hintPreview.from}
+                      to={hintPreview.to}
+                      orientation={effectiveOrientation}
+                      boardSize={boardSize}
+                      glyph={hintPreview.glyph}
+                      color={hintPreview.color}
+                      trigger={hintPreviewToken}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -880,6 +1191,10 @@ export function ChessPuzzleApp() {
                     value={`${moveIndex}/${currentPuzzle.moves.length}`}
                   />
                   <Stat label="Puzzle score" value={String(puzzleScore)} />
+                  <Stat
+                    label="Progress"
+                    value={`${sessionCursor + 1}/${Math.max(1, sessionPuzzles.length)}`}
+                  />
                 </div>
 
                 <div className="mt-5 grid gap-2">
@@ -888,7 +1203,7 @@ export function ChessPuzzleApp() {
                     onClick={applyHint}
                     className="justify-start"
                   >
-                    <Lightbulb /> Hint {hintLevel}/3
+                    <Lightbulb /> Hint {hintLevel}/{animatedHints ? 4 : 3}
                   </Button>
                   <Button
                     variant="outline"
@@ -910,7 +1225,8 @@ export function ChessPuzzleApp() {
                   <p className="font-semibold">Hint levels</p>
                   <p>
                     1: piece highlight. 2: destination highlight. 3: directional
-                    arrow. Each hint lowers puzzle score.
+                    arrow. {animatedHints ? "4: animated move preview." : ""}{" "}
+                    Each hint lowers puzzle score.
                   </p>
                 </div>
               </aside>
@@ -927,6 +1243,7 @@ export function ChessPuzzleApp() {
               className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center"
             >
               <div className="relative w-full overflow-hidden rounded-3xl border border-emerald-300/30 bg-white/85 p-8 text-center shadow-2xl backdrop-blur dark:bg-slate-900/65">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.2),transparent_45%)]" />
                 <h2 className="text-5xl font-semibold">
                   {mode === "rush" && timeLeft === 0 ? "Time Up" : "Solved"}
                 </h2>
@@ -936,12 +1253,34 @@ export function ChessPuzzleApp() {
                     : `Time: ${formatTime(elapsed)} | Puzzle score: ${puzzleScore}`}
                 </p>
 
+                {mode !== "rush" && (
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs">
+                    <Stat label="Time taken" value={formatTime(elapsed)} />
+                    <Stat label="Moves played" value={String(movesPlayed)} />
+                    <Stat
+                      label="Puzzle rating"
+                      value={String(currentPuzzle.rating)}
+                    />
+                    <Stat
+                      label="Themes"
+                      value={currentPuzzle.themes.slice(0, 2).join(", ")}
+                    />
+                  </div>
+                )}
+
                 <div className="mt-4 rounded-2xl bg-black/5 p-3 text-left text-sm dark:bg-white/10">
                   <p className="mb-1 font-semibold">Solution moves</p>
                   <p className="font-mono break-words">
                     {currentPuzzle.moves.join(" ")}
                   </p>
                 </div>
+
+                {currentPuzzle.explanation && (
+                  <div className="mt-3 rounded-2xl bg-black/5 p-3 text-left text-sm dark:bg-white/10">
+                    <p className="mb-1 font-semibold">Puzzle explanation</p>
+                    <p>{currentPuzzle.explanation}</p>
+                  </div>
+                )}
 
                 <div className="mt-6 flex flex-wrap justify-center gap-3">
                   <Button onClick={nextPuzzle}>Next Puzzle</Button>
@@ -1015,6 +1354,7 @@ export function ChessPuzzleApp() {
                     highContrast={highContrast}
                     reducedMotion={reducedMotion}
                     showCoordinates={showCoordinates}
+                    animatedHints={animatedHints}
                     setBoardTheme={setBoardTheme}
                     setPieceStyle={setPieceStyle}
                     setOrientation={setOrientation}
@@ -1024,6 +1364,7 @@ export function ChessPuzzleApp() {
                     setHighContrast={setHighContrast}
                     setReducedMotion={setReducedMotion}
                     setShowCoordinates={setShowCoordinates}
+                    setAnimatedHints={setAnimatedHints}
                     onPlaySound={(name) => playSound(name, soundEnabled)}
                     previewOptions={previewBoardOptions}
                   />
@@ -1059,6 +1400,7 @@ export function ChessPuzzleApp() {
                       highContrast={highContrast}
                       reducedMotion={reducedMotion}
                       showCoordinates={showCoordinates}
+                      animatedHints={animatedHints}
                       setBoardTheme={setBoardTheme}
                       setPieceStyle={setPieceStyle}
                       setOrientation={setOrientation}
@@ -1068,6 +1410,7 @@ export function ChessPuzzleApp() {
                       setHighContrast={setHighContrast}
                       setReducedMotion={setReducedMotion}
                       setShowCoordinates={setShowCoordinates}
+                      setAnimatedHints={setAnimatedHints}
                       onPlaySound={(name) => playSound(name, soundEnabled)}
                     />
                     <div className="rounded-2xl border border-black/10 bg-white/70 p-4 dark:border-white/15 dark:bg-white/5">
@@ -1186,6 +1529,7 @@ type SettingsPanelProps = {
   highContrast: boolean
   reducedMotion: boolean
   showCoordinates: boolean
+  animatedHints: boolean
   setBoardTheme: (value: BoardTheme) => void
   setPieceStyle: (value: PieceStyle) => void
   setOrientation: (value: "white" | "black") => void
@@ -1195,6 +1539,7 @@ type SettingsPanelProps = {
   setHighContrast: (value: boolean) => void
   setReducedMotion: (value: boolean) => void
   setShowCoordinates: (value: boolean) => void
+  setAnimatedHints: (value: boolean) => void
   onPlaySound: (
     name: "move" | "capture" | "check" | "success" | "wrong" | "hint"
   ) => void
@@ -1211,6 +1556,7 @@ function SettingsPanel({
   highContrast,
   reducedMotion,
   showCoordinates,
+  animatedHints,
   setBoardTheme,
   setPieceStyle,
   setOrientation,
@@ -1220,6 +1566,7 @@ function SettingsPanel({
   setHighContrast,
   setReducedMotion,
   setShowCoordinates,
+  setAnimatedHints,
   onPlaySound,
 }: SettingsPanelProps) {
   if (tab === "board") {
@@ -1330,9 +1677,14 @@ function SettingsPanel({
   if (tab === "hints") {
     return (
       <div className="space-y-3 rounded-2xl border border-black/10 bg-white/70 p-4 dark:border-white/15 dark:bg-white/5">
+        <OptionToggle
+          label="Animated hint preview"
+          value={animatedHints}
+          onChange={setAnimatedHints}
+        />
         <p className="text-sm text-muted-foreground">
-          Hints are progressive: piece, destination, and arrow. Each hint
-          reduces puzzle score.
+          Hints are progressive: piece, destination, arrow, and animated
+          preview. Each hint reduces puzzle score.
         </p>
         <div className="rounded-xl bg-black/5 p-3 text-sm dark:bg-white/10">
           <p>
@@ -1386,6 +1738,91 @@ function OptionToggle({
       >
         {value ? "On" : "Off"}
       </Button>
+    </div>
+  )
+}
+
+function DifficultyCard({
+  title,
+  rating,
+  motif,
+  pieces,
+  active,
+  onClick,
+}: {
+  title: string
+  rating: string
+  motif: string
+  pieces: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border p-3 text-left transition ${
+        active
+          ? "border-emerald-300/60 bg-emerald-300/15"
+          : "border-white/15 bg-white/5 hover:bg-white/10"
+      }`}
+    >
+      <p className="text-xs tracking-wide text-stone-300 uppercase">{rating}</p>
+      <p className="mt-1 text-base font-semibold text-stone-100">{title}</p>
+      <p className="mt-1 text-sm text-stone-300">{pieces}</p>
+      <p className="mt-2 text-xs leading-relaxed text-stone-300/85">{motif}</p>
+    </button>
+  )
+}
+
+function HintMovePreview({
+  from,
+  to,
+  orientation,
+  boardSize,
+  glyph,
+  color,
+  trigger,
+}: {
+  from: Square
+  to: Square
+  orientation: "white" | "black"
+  boardSize: number
+  glyph: string
+  color: "w" | "b"
+  trigger: number
+}) {
+  const start = getSquareCoordinates(from, orientation, boardSize)
+  const end = getSquareCoordinates(to, orientation, boardSize)
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      <motion.div
+        key={trigger}
+        initial={{ x: start.x, y: start.y, opacity: 0 }}
+        animate={{
+          x: [start.x, start.x, end.x, end.x, start.x],
+          y: [start.y, start.y - 12, end.y - 12, end.y, start.y],
+          opacity: [0, 1, 1, 1, 0],
+          scale: [1, 1.08, 1.08, 1, 1],
+        }}
+        transition={{
+          duration: 1.15,
+          ease: "easeInOut",
+          times: [0, 0.2, 0.55, 0.75, 1],
+        }}
+        className="absolute flex items-center justify-center rounded-full border border-emerald-200/70 bg-black/55 shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+        style={{
+          width: start.squareSize,
+          height: start.squareSize,
+          fontSize: Math.max(24, start.squareSize * 0.64),
+          color: color === "w" ? "#f8fafc" : "#111827",
+        }}
+      >
+        {glyph}
+      </motion.div>
     </div>
   )
 }
