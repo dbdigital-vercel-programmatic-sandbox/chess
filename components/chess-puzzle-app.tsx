@@ -7,6 +7,7 @@ import type { ChessboardOptions, PieceRenderObject } from "react-chessboard"
 import {
   ArrowLeft,
   ArrowRight,
+  CheckCircle2,
   Crown,
   Flame,
   Lightbulb,
@@ -43,7 +44,7 @@ import {
   type Puzzle as PuzzleItem,
 } from "@/lib/puzzle-data"
 
-type Screen = "home" | "puzzle" | "result"
+type Screen = "home" | "puzzle"
 type PlayMode = "standard" | "rush" | "daily" | "mate"
 type SettingsTab = "board" | "pieces" | "sounds" | "hints" | "accessibility"
 type DifficultyId =
@@ -398,10 +399,15 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [liveElapsed, setLiveElapsed] = useState(0)
+  const [puzzleOutcome, setPuzzleOutcome] = useState<
+    "success" | "failed" | null
+  >(null)
+  const [completionOverlayOpen, setCompletionOverlayOpen] = useState(false)
 
   const puzzleStartedAt = useRef(0)
   const totalPausedMs = useRef(0)
   const pauseStartAt = useRef<number | null>(null)
+  const completionTimeoutRef = useRef<number | null>(null)
 
   const expectedMove = currentPuzzle.moves[moveIndex]
   const expectedParsed = expectedMove ? parseUci(expectedMove) : null
@@ -422,7 +428,7 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
 
   const effectiveOrientation = orientation
   const timerActive = mode === "rush" || timerMode !== "none"
-  const interactionsLocked = locked || settingsOpen
+  const interactionsLocked = locked || settingsOpen || puzzleOutcome !== null
 
   useEffect(() => {
     setMounted(true)
@@ -461,6 +467,14 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     return () => window.removeEventListener("keydown", closeOnEscape)
   }, [settingsOpen])
 
+  useEffect(() => {
+    return () => {
+      if (completionTimeoutRef.current) {
+        window.clearTimeout(completionTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const initializePuzzle = useCallback(
     (nextPuzzle: PuzzleItem, nextMode: PlayMode) => {
       const game = new Chess(nextPuzzle.fen)
@@ -477,6 +491,13 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
       setPuzzleScore(100)
       setMovesPlayed(0)
       setHintPreviewToken(0)
+      setPuzzleOutcome(null)
+      setCompletionOverlayOpen(false)
+
+      if (completionTimeoutRef.current) {
+        window.clearTimeout(completionTimeoutRef.current)
+        completionTimeoutRef.current = null
+      }
 
       puzzleStartedAt.current = Date.now()
       totalPausedMs.current = 0
@@ -566,33 +587,28 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
       )
       setElapsed(Math.max(0, spent))
 
-      if (mode === "rush") {
-        if (success) {
-          playSound("success", soundEnabled)
-          setScore((value) => value + 1)
-          const rushPool = createSession("rush")
-          const nextIndex = getRandomIndex(rushPool.length)
-          const nextRushPuzzle = rushPool[nextIndex]
-          if (nextRushPuzzle) {
-            window.setTimeout(
-              () => initializePuzzle(nextRushPuzzle, "rush"),
-              600
-            )
-          }
-        } else {
-          setScreen("result")
-        }
-        return
+      if (mode === "rush" && success) {
+        setScore((value) => value + 1)
       }
 
       playSound(success ? "success" : "wrong", soundEnabled)
-      setScreen("result")
+      setPuzzleOutcome(success ? "success" : "failed")
+      setCompletionOverlayOpen(false)
+      setLocked(true)
+
+      if (completionTimeoutRef.current) {
+        window.clearTimeout(completionTimeoutRef.current)
+      }
+
+      completionTimeoutRef.current = window.setTimeout(() => {
+        setCompletionOverlayOpen(true)
+      }, 1700)
     },
-    [createSession, initializePuzzle, mode, soundEnabled]
+    [mode, soundEnabled]
   )
 
   useEffect(() => {
-    if (screen !== "puzzle" || settingsOpen) {
+    if (screen !== "puzzle" || settingsOpen || puzzleOutcome !== null) {
       return
     }
 
@@ -627,7 +643,7 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     }, 1000)
 
     return () => window.clearInterval(id)
-  }, [finishPuzzle, screen, settingsOpen, timeLeft, timerActive])
+  }, [finishPuzzle, puzzleOutcome, screen, settingsOpen, timeLeft, timerActive])
 
   const startMode = useCallback(
     (nextMode: PlayMode) => {
@@ -701,6 +717,15 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     setSessionPuzzles(refreshedSession)
     setSessionCursor(0)
     initializePuzzle(refreshedSession[0], mode)
+  }
+
+  function analyzePosition() {
+    const fenPath = fen.replaceAll(" ", "_")
+    window.open(
+      `https://lichess.org/analysis/${fenPath}`,
+      "_blank",
+      "noopener,noreferrer"
+    )
   }
 
   function applyHint() {
@@ -874,6 +899,19 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
       }
     }
 
+    if (puzzleOutcome === "success" && lastMove) {
+      styles[lastMove.from] = {
+        ...(styles[lastMove.from] ?? {}),
+        boxShadow: "inset 0 0 0 3px rgba(16,185,129,0.95)",
+      }
+      styles[lastMove.to] = {
+        ...(styles[lastMove.to] ?? {}),
+        boxShadow: "inset 0 0 0 4px rgba(16,185,129,0.95)",
+        background:
+          "radial-gradient(circle, rgba(16,185,129,0.45) 0%, rgba(16,185,129,0.2) 45%, transparent 60%)",
+      }
+    }
+
     if (checkSquare) {
       styles[checkSquare] = {
         ...(styles[checkSquare] ?? {}),
@@ -901,6 +939,7 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
     hintLevel,
     lastMove,
     legalTargets,
+    puzzleOutcome,
     selectedSquare,
   ])
 
@@ -1201,6 +1240,18 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
                   </div>
                 </div>
                 <div style={{ width: boardSize }} className="relative">
+                  <AnimatePresence>
+                    {puzzleOutcome === "success" && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="pointer-events-none absolute inset-0 z-10 rounded-2xl bg-emerald-400/8"
+                      >
+                        <div className="absolute inset-0 animate-pulse rounded-2xl shadow-[0_0_90px_rgba(16,185,129,0.35)]" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <Chessboard options={boardOptions} />
                   {hintPreview && (
                     <HintMovePreview
@@ -1213,6 +1264,79 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
                       trigger={hintPreviewToken}
                     />
                   )}
+
+                  <AnimatePresence>
+                    {completionOverlayOpen && puzzleOutcome && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-black/45 p-4 backdrop-blur-[2px]"
+                      >
+                        <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/20 bg-slate-950/85 p-5 text-stone-100 shadow-2xl">
+                          {puzzleOutcome === "success" && (
+                            <div className="pointer-events-none absolute inset-x-3 top-2 h-14 rounded-full bg-emerald-400/25 blur-2xl" />
+                          )}
+
+                          {puzzleOutcome === "success" && (
+                            <SuccessConfetti reducedMotion={reducedMotion} />
+                          )}
+
+                          <div className="relative">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2
+                                className={`size-5 ${puzzleOutcome === "success" ? "text-emerald-300" : "text-rose-300"}`}
+                              />
+                              <p className="text-lg font-semibold">
+                                {puzzleOutcome === "success"
+                                  ? "Puzzle Solved!"
+                                  : "Puzzle Failed"}
+                              </p>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <Stat
+                                label="Rating"
+                                value={String(currentPuzzle.rating)}
+                              />
+                              <Stat label="Moves" value={String(movesPlayed)} />
+                              <Stat label="Time" value={formatTime(elapsed)} />
+                              <Stat
+                                label="Result"
+                                value={
+                                  puzzleOutcome === "success"
+                                    ? "Completed"
+                                    : "Try again"
+                                }
+                              />
+                            </div>
+                            <div className="mt-4 grid gap-2">
+                              <Button
+                                onClick={nextPuzzle}
+                                className="justify-center"
+                              >
+                                Next Puzzle
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={resetPuzzle}
+                                className="justify-center"
+                              >
+                                Retry Puzzle
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={analyzePosition}
+                                className="justify-center"
+                              >
+                                Analyze Position
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -1243,6 +1367,7 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
                     variant="outline"
                     onClick={applyHint}
                     className="justify-start"
+                    disabled={puzzleOutcome !== null}
                   >
                     <Lightbulb /> Hint {hintLevel}/{animatedHints ? 4 : 3}
                   </Button>
@@ -1271,68 +1396,6 @@ export function ChessPuzzleApp({ initialMode }: { initialMode?: PlayMode }) {
                   </p>
                 </div>
               </aside>
-            </motion.section>
-          )}
-
-          {screen === "result" && (
-            <motion.section
-              key="result"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center"
-            >
-              <div className="relative w-full overflow-hidden rounded-3xl border border-emerald-300/30 bg-white/85 p-8 text-center shadow-2xl backdrop-blur dark:bg-slate-900/65">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.2),transparent_45%)]" />
-                <h2 className="text-5xl font-semibold">
-                  {mode === "rush" && timeLeft === 0 ? "Time Up" : "Solved"}
-                </h2>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                  {mode === "rush"
-                    ? `Final score: ${score}`
-                    : `Time: ${formatTime(elapsed)} | Puzzle score: ${puzzleScore}`}
-                </p>
-
-                {mode !== "rush" && (
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs">
-                    <Stat label="Time taken" value={formatTime(elapsed)} />
-                    <Stat label="Moves played" value={String(movesPlayed)} />
-                    <Stat
-                      label="Puzzle rating"
-                      value={String(currentPuzzle.rating)}
-                    />
-                    <Stat
-                      label="Themes"
-                      value={currentPuzzle.themes.slice(0, 2).join(", ")}
-                    />
-                  </div>
-                )}
-
-                <div className="mt-4 rounded-2xl bg-black/5 p-3 text-left text-sm dark:bg-white/10">
-                  <p className="mb-1 font-semibold">Solution moves</p>
-                  <p className="font-mono break-words">
-                    {currentPuzzle.moves.join(" ")}
-                  </p>
-                </div>
-
-                {currentPuzzle.explanation && (
-                  <div className="mt-3 rounded-2xl bg-black/5 p-3 text-left text-sm dark:bg-white/10">
-                    <p className="mb-1 font-semibold">Puzzle explanation</p>
-                    <p>{currentPuzzle.explanation}</p>
-                  </div>
-                )}
-
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                  <Button onClick={nextPuzzle}>Next Puzzle</Button>
-                  <Button variant="outline" onClick={resetPuzzle}>
-                    Retry Puzzle
-                  </Button>
-                  <Button variant="ghost" onClick={goHome}>
-                    Home
-                  </Button>
-                </div>
-              </div>
             </motion.section>
           )}
         </AnimatePresence>
@@ -1556,6 +1619,41 @@ function SettingsContent(
         <Chessboard options={props.previewOptions} />
       </div>
     </>
+  )
+}
+
+function SuccessConfetti({ reducedMotion }: { reducedMotion: boolean }) {
+  if (reducedMotion) {
+    return null
+  }
+
+  const particles = [
+    { left: "8%", delay: 0, duration: 1.2 },
+    { left: "22%", delay: 0.1, duration: 1.35 },
+    { left: "37%", delay: 0.15, duration: 1.28 },
+    { left: "54%", delay: 0.05, duration: 1.4 },
+    { left: "68%", delay: 0.12, duration: 1.22 },
+    { left: "84%", delay: 0.18, duration: 1.3 },
+  ]
+
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-20 overflow-hidden">
+      {particles.map((particle, index) => (
+        <motion.span
+          key={`${particle.left}-${index}`}
+          initial={{ y: -16, opacity: 0, rotate: 0 }}
+          animate={{ y: 70, opacity: [0, 1, 1, 0], rotate: 250 }}
+          transition={{
+            duration: particle.duration,
+            delay: particle.delay,
+            repeat: 1,
+            ease: "easeOut",
+          }}
+          className="absolute top-0 h-2 w-2 rounded-[2px] bg-emerald-300"
+          style={{ left: particle.left }}
+        />
+      ))}
+    </div>
   )
 }
 
